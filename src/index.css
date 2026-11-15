@@ -1,3 +1,8 @@
 @import "tailwindcss";
 
-html { background: #09090b; color-scheme: dark; }
+html { background: #09090b; color-scheme: dark; -webkit-tap-highlight-color: transparent; }
+/* iPhone instalada: barra de estado transparente, así que el contenido respeta la isla y la barra de inicio */
+body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
+.safe-top { padding-top: env(safe-area-inset-top); }
+/* El modal ocupa la pantalla: también respeta la isla */
+.safe-modal { padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }

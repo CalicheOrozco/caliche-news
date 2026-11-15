@@ -17,7 +17,7 @@ export default function NewsModal({ item, categoryLabel, onClose, onToggleSave }
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
+    <div className="safe-modal fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="news-title" onClick={(e) => e.stopPropagation()}
         className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-zinc-800 bg-zinc-950 shadow-2xl sm:rounded-3xl">
         <button ref={closeRef} type="button" onClick={onClose} aria-label="Cerrar"
