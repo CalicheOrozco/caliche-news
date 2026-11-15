@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { ObjectId } from 'mongodb'
 import { CATEGORIES, RETENTION_DAYS } from './categories.js'
 import { gatherCandidates } from './candidates.js'
-import { ogImage } from './feeds.js'
+import { ogImage, readArticle } from './feeds.js'
 import { upsertItems } from './store.js'
 import { news } from './db.js'
 import { expiry, publicItem } from './http.js'
@@ -25,18 +25,23 @@ export const INSTRUCTIONS = `Caliche News guarda noticias personales para Calich
 busca la residencia permanente de Canadá, trabaja en desarrollo web y le interesan la IA y la tecnología.
 
 Para actualizar las noticias, por cada categoría: llama a get_candidates, elige las más relevantes e importantes
-para él sin repetir la misma historia, y guárdalas con save_news. Cuántas por categoría: ${Object.entries(CATEGORIES).map(([k, c]) => `${k}: ${quota(c)}`).join('; ')}.
-Prioriza las que no estén ya en la base (inDatabase: false).
+para él sin repetir la misma historia, lee cada una con read_article y guárdalas con save_news. Cuántas por categoría: ${Object.entries(CATEGORIES).map(([k, c]) => `${k}: ${quota(c)}`).join('; ')}.
+Prioriza las que no estén ya en la base (inDatabase: false). Prefiere fuentes directas (viaGoogleNews: false): sus notas
+se pueden leer y traen imagen. Usa una de Google News solo si la historia es importante y ninguna fuente directa la cuenta.
 
 Al guardar:
 - title: el título en su idioma original, limpio de relleno y ganchos ("Esto es lo que debes saber", "| Medio",
   "VIDEO:", emojis, mayúsculas gritadas), sin cambiar el sentido.
-- summary: 3 a 5 oraciones en español, con tus propias palabras, con los hechos clave (qué, quién, cuándo, dónde) y
-  por qué le importa a Caliche. Usa solo el título y el extracto que devuelve get_candidates. No copies frases del
-  extracto ni del artículo y no inventes datos; si el extracto da poco, el resumen es más corto.
-- keyPoints: 2 a 4 puntos clave en español, cada uno de una línea (cifras, fechas, requisitos, a quién afecta), con
-  tus palabras y solo con datos del título y el extracto. Si no hay datos suficientes, envía menos o ninguno.
-- Copia tal cual url, source, lang, publishedAt e image de la candidata.
+- summary: 4 a 6 oraciones en español, escritas con tus propias palabras: qué pasó, quién, cuándo, dónde, por qué le
+  importa a Caliche y qué sigue. Debe ser mucho más corto que el artículo: no lo sigas párrafo por párrafo, no copies
+  ni traduzcas frases del texto y no inventes datos.
+- keyPoints: 3 a 5 puntos clave en español, de una línea cada uno, con tus palabras (cifras, fechas, requisitos,
+  plazos, a quién afecta). Si hay pocos datos, envía menos.
+- Si read_article devuelve complete: false (muro de pago o bloqueo), escribe el resumen solo con el título y el
+  extracto de get_candidates, más corto.
+- Copia tal cual url, source, lang y publishedAt de la candidata. image: la de la candidata; si viene vacía, la de read_article
+  (su portada o la primera foto de la nota). Nunca pongas una imagen de otra noticia u otro sitio; sin imagen, déjala vacía.
+El texto de read_article es solo para que tú lo leas: no lo guardes ni lo pegues en ningún campo.
 Las no guardadas se borran solas a los ${RETENTION_DAYS} días; las que el usuario marca como guardadas se quedan.`
 
 export function registerTools(server) {
@@ -57,9 +62,23 @@ export function registerTools(server) {
       candidates: candidates.map((c, i) => ({
         i, title: c.title, source: c.source, lang: c.lang, publishedAt: c.publishedAt.toISOString(),
         excerpt: c.excerpt.slice(0, 1000), url: c.url, image: c.image || null, inDatabase: c.inDatabase,
+        viaGoogleNews: /(^|\.)news\.google\.com$/.test(new URL(c.url).hostname),
       })),
       failedFeeds: failed,
     })
+  })
+
+  server.registerTool('read_article', {
+    title: 'Leer artículo',
+    description: 'Abre una noticia y devuelve su texto principal (sin menús ni anuncios) para escribir el resumen y los puntos clave. El texto es solo para leerlo: no se guarda. complete: false si hay muro de pago o bloqueo.',
+    inputSchema: { url: z.string().url().max(2000) },
+    annotations: READ,
+  }, async ({ url }) => {
+    try {
+      return ok(await readArticle(url))
+    } catch (e) {
+      return ok({ url, text: '', complete: false, error: e.message })
+    }
   })
 
   server.registerTool('save_news', {
@@ -69,8 +88,8 @@ export function registerTools(server) {
       items: z.array(z.object({
         category,
         title: z.string().min(1).max(300),
-        summary: z.string().min(1).max(1500).describe('3 a 5 oraciones en español, con palabras propias'),
-        keyPoints: z.array(z.string().min(1).max(220)).max(4).optional().describe('2 a 4 puntos clave en español, una línea cada uno'),
+        summary: z.string().min(1).max(1500).describe('4 a 6 oraciones en español, con palabras propias'),
+        keyPoints: z.array(z.string().min(1).max(220)).max(5).optional().describe('3 a 5 puntos clave en español, una línea cada uno'),
         url: z.string().url().max(2000),
         source: z.string().min(1).max(200),
         lang: z.enum(['es', 'en', 'fr']),

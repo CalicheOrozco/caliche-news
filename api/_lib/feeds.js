@@ -64,3 +64,50 @@ export async function ogImage(url) {
     return ''
   }
 }
+
+// Texto principal de un artículo, para que Claude lo lea y escriba su resumen. No se guarda en la base.
+// Quita scripts, menús, encabezados, pies, barras laterales y formularios; prefiere <article>/<main>
+// y se queda con los párrafos (<p>) con texto de verdad.
+export async function readArticle(url, maxChars = 8000) {
+  const html = await fetchText(url, 8000)
+  const meta = (name) => {
+    const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']+)["']`, 'i'))
+      || html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${name}["']`, 'i'))
+    return m ? stripHtml(m[1]) : ''
+  }
+  // Primera foto dentro de la nota (antes de quitar <figure>), por si no hay og:image.
+  const firstImage = articleImage(html, url)
+  let body = html
+    .replace(/<(script|style|noscript|svg|iframe|nav|header|footer|aside|form|figure)\b[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+  const scope = body.match(/<article\b[\s\S]*<\/article>/i)?.[0] || body.match(/<main\b[\s\S]*<\/main>/i)?.[0] || body
+  const paras = (scope.match(/<p\b[^>]*>[\s\S]*?<\/p>/gi) || [])
+    .map((p) => stripHtml(p))
+    .filter((t) => t.length > 60 && !/^(advertisement|publicidad|suscr[ií]bete|subscribe|sign up|read more|lee también)/i.test(t))
+  const text = paras.join('\n\n').slice(0, maxChars)
+  return {
+    url,
+    title: meta('og:title') || stripHtml(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ''),
+    description: meta('og:description') || meta('description'),
+    image: (() => { const i = meta('og:image') || meta('twitter:image'); return /^https?:\/\//.test(i) ? i : firstImage })(),
+    text,
+    complete: text.length > 400,  // false: muro de pago, bloqueo o página sin texto (usa el extracto del RSS)
+  }
+}
+
+// Primera imagen "de contenido" dentro de <article>/<main>: salta logos, íconos, avatares, anuncios,
+// píxeles de seguimiento y fotos pequeñas. Resuelve rutas relativas y lazy-load (data-src, srcset).
+const SKIP_IMG = /logo|icon|avatar|sprite|badge|banner|ads?[\/_.-]|doubleclick|pixel|tracking|placeholder|blank|spacer|emoji|gravatar|author/i
+function articleImage(html, pageUrl) {
+  const scope = html.match(/<article\b[\s\S]*?<\/article>/i)?.[0] || html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || ''
+  for (const tag of scope.match(/<img\b[^>]*>/gi) || []) {
+    const get = (a) => tag.match(new RegExp(`\\b${a}=["']([^"']+)["']`, 'i'))?.[1] || ''
+    let src = get('data-src') || get('data-lazy-src') || get('data-original') || get('src')
+    if (!src || src.startsWith('data:')) src = (get('data-srcset') || get('srcset')).split(',').pop()?.trim().split(/\s+/)[0] || ''
+    if (!src || src.startsWith('data:') || /\.svg(\?|$)/i.test(src) || SKIP_IMG.test(src + ' ' + get('class') + ' ' + get('alt'))) continue
+    const w = parseInt(get('width')) || 0, h = parseInt(get('height')) || 0
+    if ((w && w < 300) || (h && h < 160)) continue
+    try { return new URL(decode(src), pageUrl).href } catch { continue }
+  }
+  return ''
+}
