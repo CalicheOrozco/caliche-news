@@ -63,6 +63,18 @@ export const SOURCES = {
     { name: 'National Post', lang: 'en', url: 'https://nationalpost.com/category/news/canada/feed' },
     { name: 'Canadian Press (Google News)', lang: 'en', url: gnews('"Canadian Press" Canada') },
   ],
+  internacional: [
+    { name: 'BBC Mundo', lang: 'es', url: 'https://feeds.bbci.co.uk/mundo/rss.xml' },
+    { name: 'El País Internacional', lang: 'es', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada' },
+    { name: 'DW Español', lang: 'es', url: 'https://rss.dw.com/xml/rss-sp-all' },
+    { name: 'France 24 Español', lang: 'es', url: 'https://www.france24.com/es/rss' },
+    { name: 'CNN en Español', lang: 'es', url: 'https://cnnespanol.cnn.com/feed/' },
+    { name: 'BBC World', lang: 'en', url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
+    { name: 'The Guardian World', lang: 'en', url: 'https://www.theguardian.com/world/rss' },
+    { name: 'Al Jazeera', lang: 'en', url: 'https://www.aljazeera.com/xml/rss/all.xml' },
+    { name: 'NPR World', lang: 'en', url: 'https://feeds.npr.org/1004/rss.xml' },
+    { name: 'AP / Reuters (Google News)', lang: 'en', url: gnews('world news Reuters OR "Associated Press"') },
+  ],
 }
 
 // Para qué es relevante cada categoría (guía para elegir las noticias).
@@ -73,4 +85,5 @@ trabaja en desarrollo web y le interesan la IA y la tecnología.
 - mexico: lo más importante de México (política, economía, seguridad, sociedad).
 - moncton: Moncton y New Brunswick: ciudad, vivienda, empleo, clima, servicios, gobierno provincial.
 - migracion: IRCC, Express Entry y sus sorteos, PNP de New Brunswick (NBPNP), permisos de trabajo, cambios de reglas y plazos. Prioriza lo que afecta a alguien en NB que busca la PR.
-- canada: lo más importante a nivel nacional en Canadá.`
+- canada: lo más importante a nivel nacional en Canadá.
+- internacional: lo más importante del mundo (geopolítica, conflictos, economía global, EE. UU. y Latinoamérica); sin repetir lo que ya va en México o Canadá.`

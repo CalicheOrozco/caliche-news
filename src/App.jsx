@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getCategories, getNews, setSaved } from './api.js'
+import { getCategories, getCounts, getNews, setSaved } from './api.js'
 import NewsCard from './components/NewsCard.jsx'
 import NewsModal from './components/NewsModal.jsx'
 
 const PAGE = 30
 const SAVED = 'guardadas'
-const BILINGUAL = ['ia', 'tecnologia']  // categorías con filtro de idioma
+const BILINGUAL = ['ia', 'tecnologia', 'internacional']  // categorías con filtro de idioma
 
 export default function App() {
   const [categories, setCategories] = useState([])
@@ -20,6 +20,9 @@ export default function App() {
   const reqId = useRef(0)
   const [open, setOpen] = useState(null)  // noticia abierta en el detalle
   const cache = useRef(new Map())  // pestaña/filtros -> { items, more }
+  const [counts, setCounts] = useState(null)  // { categories: { ia: 20, ... }, saved: 3 }
+  const refreshCounts = useCallback(() => { getCounts().then(setCounts).catch(() => {}) }, [])
+  useEffect(() => { refreshCounts() }, [refreshCounts])
 
   useEffect(() => { getCategories().then((d) => setCategories(d.categories)).catch((e) => setError(e.message)) }, [])
   useEffect(() => { try { localStorage.setItem('cn.tab', tab) } catch { /* sin almacenamiento */ } }, [tab])
@@ -88,6 +91,7 @@ export default function App() {
       else cache.current.set(k, { ...v, items: v.items.map((i) => (i.id === item.id ? updated : i)) })
     }
     setOpen((o) => (o && o.id === updated.id ? updated : o))
+    setCounts((c) => c && { ...c, saved: Math.max(0, c.saved + (updated.saved ? 1 : -1)) })
     setItems((prev) => (tab === SAVED && !updated.saved
       ? prev.filter((i) => i.id !== item.id)
       : prev.map((i) => (i.id === item.id ? updated : i))))
@@ -127,6 +131,13 @@ export default function App() {
               }`}
             >
               {t.id === SAVED ? '★ ' : ''}{t.label}
+              {counts && (
+                <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] tabular-nums ${
+                  tab === t.id ? 'bg-zinc-950/20 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
+                }`}>
+                  {t.id === SAVED ? counts.saved : counts.categories[t.id] || 0}
+                </span>
+              )}
             </button>
           ))}
         </nav>

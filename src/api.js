@@ -5,6 +5,7 @@ async function json(res) {
   return data
 }
 
+export const getCounts = () => fetch('/api/counts').then(json)
 export const getCategories = () => fetch('/api/categories').then(json)
 
 export function getNews({ category, lang, q, saved, before, limit = 30 } = {}) {
