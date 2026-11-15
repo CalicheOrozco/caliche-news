@@ -1,7 +1,8 @@
 // GET  /api/news?category=ia&lang=es&q=texto&saved=1&limit=50&before=<ISO>  → lista (público)
 // POST /api/news  { items: [...] }  → crea o actualiza por url (requiere clave)
 import { news } from '../_lib/db.js'
-import { send, requireKey, cleanItem, expiry, publicItem } from '../_lib/http.js'
+import { send, requireKey, publicItem } from '../_lib/http.js'
+import { upsertItems } from '../_lib/store.js'
 import { CATEGORIES } from '../_lib/categories.js'
 
 export default async function handler(req, res) {
@@ -40,35 +41,5 @@ async function upsertMany(req, res) {
   const items = Array.isArray(req.body?.items) ? req.body.items : null
   if (!items?.length) return send(res, 400, { error: 'Envía { items: [...] }' })
   if (items.length > 500) return send(res, 400, { error: 'Máximo 500 por petición' })
-
-  const now = new Date()
-  const ops = []
-  const rejected = []
-  items.forEach((raw, i) => {
-    const { item, errors } = cleanItem(raw)
-    if (errors.length) return rejected.push({ index: i, url: raw?.url, missing: errors })
-    ops.push({
-      updateOne: {
-        filter: { url: item.url },
-        update: [
-          // Pipeline: conserva addedAt, saved y la caducidad de las guardadas.
-          { $set: {
-              // $literal: un título como "$5 mil millones" no debe leerse como nombre de campo.
-              ...Object.fromEntries(Object.entries(item).map(([k, v]) => [k, { $literal: v }])),
-              updatedAt: now,
-              addedAt: { $ifNull: ['$addedAt', now] },
-              saved: { $ifNull: ['$saved', false] },
-          } },
-          { $set: { expiresAt: { $cond: ['$saved', '$$REMOVE', { $ifNull: ['$expiresAt', expiry(now)] }] } } },
-        ],
-        upsert: true,
-      },
-    })
-  })
-  const r = ops.length ? await (await news()).bulkWrite(ops, { ordered: false }) : null
-  send(res, 200, {
-    inserted: r?.upsertedCount ?? 0,
-    updated: r?.modifiedCount ?? 0,
-    rejected,
-  })
+  send(res, 200, await upsertItems(items))
 }
