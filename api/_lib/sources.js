@@ -1,5 +1,9 @@
 // Fuentes por categoría (RSS/Atom). Si un feed falla, get_candidates (MCP) lo reporta en "failedFeeds"
 // y se puede quitar o cambiar aquí sin tocar nada más. lang = idioma de la fuente.
+// match: para feeds generales dentro de una categoría temática (Xataka en "IA"), solo entran las
+// notas cuyo título o extracto coincide.
+const AI = /\b(IA|AI|A\.I\.|inteligencia artificial|artificial intelligence|LLMs?|GPT[-\w]*|ChatGPT|OpenAI|Anthropic|Claude|Gemini|Copilot|DeepMind|Llama|Mistral|chatbots?|machine learning|aprendizaje (autom[aá]tico|profundo)|redes neuronales|neural|agentes? de IA|AI agents?|Nvidia|deepfakes?|modelos? de lenguaje|language models?)\b/
+
 const gnews = (q, hl = 'en-CA', gl = 'CA') =>
   `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${hl}&gl=${gl}&ceid=${gl}:${hl.split('-')[0]}`
 
@@ -8,13 +12,13 @@ export const SOURCES = {
     { name: 'MIT Technology Review', lang: 'en', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed' },
     { name: 'The Verge', lang: 'en', url: 'https://www.theverge.com/rss/ai-artificial-intelligence/index.xml' },
     { name: 'TechCrunch', lang: 'en', url: 'https://techcrunch.com/category/artificial-intelligence/feed/' },
-    { name: 'Ars Technica', lang: 'en', url: 'https://feeds.arstechnica.com/arstechnica/technology-lab' },
+    { name: 'Ars Technica', lang: 'en', url: 'https://feeds.arstechnica.com/arstechnica/technology-lab' , match: AI },
     { name: 'VentureBeat', lang: 'en', url: 'https://venturebeat.com/category/ai/feed/' },
     { name: 'Wired', lang: 'en', url: 'https://www.wired.com/feed/tag/ai/latest/rss' },
     { name: 'Hacker News', lang: 'en', url: 'https://hnrss.org/newest?q=AI+OR+LLM&points=100' },
-    { name: 'Xataka', lang: 'es', url: 'https://feeds.weblogssl.com/xataka2' },
-    { name: 'Hipertextual', lang: 'es', url: 'https://hipertextual.com/feed' },
-    { name: 'Genbeta', lang: 'es', url: 'https://feeds.weblogssl.com/genbeta' },
+    { name: 'Xataka', lang: 'es', url: 'https://feeds.weblogssl.com/xataka2' , match: AI },
+    { name: 'Hipertextual', lang: 'es', url: 'https://hipertextual.com/feed' , match: AI },
+    { name: 'Genbeta', lang: 'es', url: 'https://feeds.weblogssl.com/genbeta' , match: AI },
     { name: 'Google Noticias (IA)', lang: 'es', url: gnews('inteligencia artificial', 'es-419', 'MX') },
   ],
   tecnologia: [

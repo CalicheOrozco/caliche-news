@@ -28,8 +28,8 @@ Para actualizar las noticias, por cada categoría: llama a get_candidates, elige
 para él sin repetir la misma historia, lee cada una con read_article y guárdalas con save_news. Cuántas por categoría: ${Object.entries(CATEGORIES).map(([k, c]) => `${k}: ${quota(c)}`).join('; ')}.
 Ve categoría por categoría y termina cada una (get_candidates → read_article → save_news) antes de pasar a la
 siguiente, para no quedarte sin contexto. Si no alcanzas todas, di cuáles faltan.
-Prioriza las que no estén ya en la base (inDatabase: false) y luego las guardadas con el formato viejo
-(outdated: true: resumen en otro idioma o puntos que repiten el resumen), que debes rehacer. Prefiere fuentes directas (viaGoogleNews: false): sus notas
+get_candidates ya quita las que están al día; vienen primero las nuevas y luego las de formato viejo (outdated: true:
+resumen en otro idioma o puntos que repiten el resumen), que debes rehacer. Prefiere fuentes directas (viaGoogleNews: false): sus notas
 se pueden leer y traen imagen. Usa una de Google News solo si la historia es importante y ninguna fuente directa la cuenta.
 
 Al guardar:
@@ -59,23 +59,24 @@ Las no guardadas se borran solas a los ${RETENTION_DAYS} días; las que el usuar
 export function registerTools(server) {
   server.registerTool('get_candidates', {
     title: 'Noticias candidatas',
-    description: 'Lee los RSS de una categoría y devuelve noticias recientes candidatas (título, fuente, idioma, fecha, extracto corto, url e imagen), sin repetidos. inDatabase indica si ya está guardada.',
+    description: 'Lee los RSS de una categoría y devuelve noticias recientes candidatas (título, fuente, idioma, fecha, extracto corto, url e imagen). Ya vienen filtradas: sin repetidos, sin las guardadas con el formato actual, sin duplicados de Google News y, en IA, solo notas de IA. outdated: true = guardada con el formato viejo, hay que rehacerla. skipped dice cuántas se quitaron.',
     inputSchema: {
       category: category.describe(Object.entries(CATEGORIES).map(([k, c]) => `${k} = ${c.label}`).join(', ')),
       hours: z.number().int().min(6).max(168).optional().describe('Antigüedad máxima en horas (por defecto 72)'),
-      max: z.number().int().min(10).max(150).optional().describe('Máximo de candidatas (por defecto 40)'),
+      max: z.number().int().min(5).max(80).optional().describe('Máximo de candidatas (por defecto el doble de la cuota, tope 30)'),
+      includeExisting: z.boolean().optional().describe('true = incluir también las ya guardadas con el formato actual (por defecto no)'),
     },
     annotations: READ,
-  }, async ({ category, hours, max }) => {
-    const { candidates, failed } = await gatherCandidates(category, { hours, max })
+  }, async ({ category, hours, max, includeExisting }) => {
+    const { candidates, failed, skipped } = await gatherCandidates(category, { hours, max, includeExisting })
     return ok({
       category,
       want: quota(CATEGORIES[category]),
       candidates: candidates.map((c, i) => ({
         i, title: c.title, source: c.source, lang: c.lang, publishedAt: c.publishedAt.toISOString(),
-        excerpt: c.excerpt.slice(0, 400), url: c.url, image: c.image || null, inDatabase: c.inDatabase, outdated: c.outdated,
-        viaGoogleNews: /(^|\.)news\.google\.com$/.test(new URL(c.url).hostname),
+        excerpt: c.excerpt.slice(0, 400), url: c.url, image: c.image || null, outdated: c.outdated, viaGoogleNews: c.isGN,
       })),
+      skipped,
       failedFeeds: failed,
     })
   })
