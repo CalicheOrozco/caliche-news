@@ -9,7 +9,7 @@ const rpcError = (res, status, message) =>
   res.status(status).json({ jsonrpc: '2.0', error: { code: -32000, message }, id: null })
 
 export default async function handler(req, res) {
-  if (!process.env.MCP_SECRET || req.query.key !== process.env.MCP_SECRET) return rpcError(res, 401, 'No autorizado')
+  if (!process.env.MCP_SECRET || req.query.key !== process.env.MCP_SECRET) return rpcError(res, 403, 'Clave del MCP incorrecta')  // 403, no 401: un 401 hace que Claude intente OAuth
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return rpcError(res, 405, 'Method not allowed') }
 
   const server = new McpServer({ name: 'caliche-news', title: 'Caliche News', version: '1.0.0' }, { instructions: INSTRUCTIONS })
