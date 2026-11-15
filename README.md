@@ -31,3 +31,16 @@ La clave va en la cabecera `Authorization: Bearer <API_KEY>`.
 
 Las no guardadas tienen `expiresAt` = 7 días después de agregarse y MongoDB las borra solo (índice TTL).
 Al guardarlas se quita `expiresAt` y se quedan para siempre.
+
+## Automatización con Claude (MCP)
+Claude actualiza las noticias a través del servidor MCP del proyecto (`api/mcp.js`). No usa la API de Anthropic.
+
+1. En Vercel agrega la variable `MCP_SECRET` (una clave larga) y publica.
+2. En Claude: Configuración → Conectores → Agregar conector personalizado, con la URL
+   `https://<tu-dominio>/mcp/<MCP_SECRET>`.
+3. Pide "actualiza las noticias" (o deja una tarea programada). Claude llama a `get_candidates` por categoría
+   (tu servidor lee los RSS de `api/_lib/sources.js`), elige, limpia los títulos, escribe un resumen breve en
+   español y guarda con `save_news` (si no hay imagen, se toma la portada del artículo).
+
+Herramientas: `get_candidates`, `save_news`, `list_news`, `get_status`, `set_saved`, `delete_news`.
+`get_candidates` devuelve `failedFeeds` con las fuentes que no respondieron, para cambiarlas en `sources.js`.
