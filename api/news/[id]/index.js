@@ -5,7 +5,7 @@
 import { news } from '../../_lib/db.js'
 import { send, requireKey, toId, cleanItem, publicItem } from '../../_lib/http.js'
 
-const EDITABLE = ['title', 'summary', 'url', 'source', 'category', 'lang', 'publishedAt']
+const EDITABLE = ['title', 'summary', 'url', 'source', 'category', 'lang', 'publishedAt', 'image']
 
 export default async function handler(req, res) {
   try {

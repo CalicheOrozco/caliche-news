@@ -35,6 +35,7 @@ export function cleanItem(raw) {
     category: s(raw.category),
     lang: s(raw.lang),
     publishedAt: raw.publishedAt ? new Date(raw.publishedAt) : null,
+    image: /^https?:\/\//.test(s(raw.image)) ? s(raw.image) : '',
   }
   if (!item.title) errors.push('title')
   if (!/^https?:\/\//.test(item.url)) errors.push('url')
