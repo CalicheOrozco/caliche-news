@@ -87,6 +87,15 @@ export async function readArticle(url, maxChars = 8000) {
   }
   // Primera foto dentro de la nota (antes de quitar <figure>), por si no hay og:image.
   const firstImage = articleImage(html, url)
+  // Texto del JSON-LD (articleBody), por si la página no arma el artículo con <p>.
+  let ldBody = ''
+  for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      const find = (o) => (!o || typeof o !== 'object' ? '' : typeof o.articleBody === 'string' ? o.articleBody
+        : Object.values(o).reduce((acc, v) => acc || find(v), ''))
+      ldBody = find(JSON.parse(m[1])); if (ldBody) break
+    } catch { /* JSON-LD inválido */ }
+  }
   let body = html
     .replace(/<(script|style|noscript|svg|iframe|nav|header|footer|aside|form|figure)\b[\s\S]*?<\/\1>/gi, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ')
@@ -94,7 +103,11 @@ export async function readArticle(url, maxChars = 8000) {
   const paras = (scope.match(/<p\b[^>]*>[\s\S]*?<\/p>/gi) || [])
     .map((p) => stripHtml(p))
     .filter((t) => t.length > 60 && !/^(advertisement|publicidad|suscr[ií]bete|subscribe|sign up|read more|lee también)/i.test(t))
-  const text = paras.join('\n\n').slice(0, maxChars)
+  let text = paras.join('\n\n')
+  if (text.length < 400 && ldBody) text = stripHtml(ldBody)
+  // Último recurso: todo el texto dentro de <article>/<main> (sitios que usan <div> en vez de <p>).
+  if (text.length < 400 && scope !== body) text = stripHtml(scope).replace(/\s{2,}/g, ' ').trim()
+  text = text.slice(0, maxChars)
   return {
     url,
     title: meta('og:title') || stripHtml(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ''),

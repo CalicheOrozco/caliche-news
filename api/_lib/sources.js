@@ -1,5 +1,6 @@
 // Fuentes por categoría (RSS/Atom). Si un feed falla, get_candidates (MCP) lo reporta en "failedFeeds"
 // y se puede quitar o cambiar aquí sin tocar nada más. lang = idioma de la fuente.
+// noRead: el sitio bloquea read_article (403); se usa el extracto del RSS, que va más largo.
 // match: para feeds generales dentro de una categoría temática (Xataka en "IA"), solo entran las
 // notas cuyo título o extracto coincide.
 const AI = /\b(IA|AI|A\.I\.|inteligencia artificial|artificial intelligence|LLMs?|GPT[-\w]*|ChatGPT|OpenAI|Anthropic|Claude|Gemini|Copilot|DeepMind|Llama|Mistral|chatbots?|machine learning|aprendizaje (autom[aá]tico|profundo)|redes neuronales|neural|agentes? de IA|AI agents?|Nvidia|deepfakes?|modelos? de lenguaje|language models?)\b/
@@ -19,6 +20,9 @@ export const SOURCES = {
     { name: 'Xataka', lang: 'es', url: 'https://feeds.weblogssl.com/xataka2' , match: AI },
     { name: 'Hipertextual', lang: 'es', url: 'https://hipertextual.com/feed' , match: AI },
     { name: 'Genbeta', lang: 'es', url: 'https://feeds.weblogssl.com/genbeta' , match: AI },
+    { name: "WWWhat's new", lang: 'es', url: 'https://wwwhatsnew.com/feed/', match: AI },
+    { name: 'Xataka México', lang: 'es', url: 'https://feeds.weblogssl.com/xatakamx', match: AI },
+    // Respaldo: sus enlaces no se pueden leer; solo entra si ninguna fuente directa cuenta la historia.
     { name: 'Google Noticias (IA)', lang: 'es', url: gnews('inteligencia artificial', 'es-419', 'MX') },
   ],
   tecnologia: [
@@ -38,7 +42,7 @@ export const SOURCES = {
     { name: 'Expansión', lang: 'es', url: 'https://expansion.mx/rss' },
     { name: 'El Financiero', lang: 'es', url: 'https://www.elfinanciero.com.mx/arc/outboundfeeds/rss/?outputType=xml' },
     { name: 'La Jornada', lang: 'es', url: 'https://www.jornada.com.mx/rss/edicion.xml?v=1' },
-    { name: 'El País México', lang: 'es', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/mexico/portada' },
+    { name: 'El País México', lang: 'es', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/mexico/portada', noRead: true },
     { name: 'El Universal / Milenio / Proceso (Google Noticias)', lang: 'es', url: gnews('México', 'es-419', 'MX') },
   ],
   moncton: [
@@ -69,9 +73,8 @@ export const SOURCES = {
   ],
   internacional: [
     { name: 'BBC Mundo', lang: 'es', url: 'https://feeds.bbci.co.uk/mundo/rss.xml' },
-    { name: 'El País Internacional', lang: 'es', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada' },
+    { name: 'El País Internacional', lang: 'es', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada', noRead: true },
     { name: 'DW Español', lang: 'es', url: 'https://rss.dw.com/xml/rss-sp-all' },
-    { name: 'CNN en Español', lang: 'es', url: 'https://cnnespanol.cnn.com/feed/' },
     { name: 'BBC World', lang: 'en', url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
     { name: 'The Guardian World', lang: 'en', url: 'https://www.theguardian.com/world/rss' },
     { name: 'Al Jazeera', lang: 'en', url: 'https://www.aljazeera.com/xml/rss/all.xml' },

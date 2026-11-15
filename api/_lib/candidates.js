@@ -26,7 +26,7 @@ export async function gatherCandidates(category, { hours = 72, max, includeExist
       return parseFeed(await fetchText(src.url)).slice(0, PER_FEED)
         .filter((it) => it.publishedAt.getTime() >= cutoff)
         .filter((it) => !src.match || src.match.test(`${it.title} ${it.excerpt}`))
-        .map((it) => ({ ...it, lang: src.lang, isGN, source: (isGN && it.origin) || src.name.replace(/\s*\(Google.*\)$/, '') }))
+        .map((it) => ({ ...it, lang: src.lang, isGN, readable: !isGN && !src.noRead, source: (isGN && it.origin) || src.name.replace(/\s*\(Google.*\)$/, '') }))
     } catch (e) {
       failed.push({ source: src.name, error: e.message })
       return []
@@ -43,8 +43,9 @@ export async function gatherCandidates(category, { hours = 72, max, includeExist
   const existing = new Map(docs.map((d) => [d.url, d.fmt || 1]))
   const tagged = all.map((c) => ({ ...c, inDatabase: existing.has(c.url), outdated: existing.has(c.url) && existing.get(c.url) < FORMAT }))
   const usable = includeExisting ? tagged : tagged.filter((c) => !c.inDatabase || c.outdated)
-  // Primero las nuevas, luego las de formato viejo; dentro de cada grupo, las más recientes.
-  usable.sort((a, b) => (a.inDatabase - b.inDatabase) || (b.publishedAt - a.publishedAt))
+  // Primero las nuevas, luego las de formato viejo; dentro de cada grupo, las que se pueden leer
+  // (fuentes directas) y después las más recientes.
+  usable.sort((a, b) => (a.inDatabase - b.inDatabase) || (b.readable - a.readable) || (b.publishedAt - a.publishedAt))
   // Bilingües (IA, Tecnología, Internacional): mitad por idioma, para cubrir las dos cuotas.
   let top
   if (cat.perLang) {

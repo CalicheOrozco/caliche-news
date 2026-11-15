@@ -29,8 +29,9 @@ para él sin repetir la misma historia, lee cada una con read_article y guárdal
 Ve categoría por categoría y termina cada una (get_candidates → read_article → save_news) antes de pasar a la
 siguiente, para no quedarte sin contexto. Si no alcanzas todas, di cuáles faltan.
 get_candidates ya quita las que están al día; vienen primero las nuevas y luego las de formato viejo (outdated: true:
-resumen en otro idioma o puntos que repiten el resumen), que debes rehacer. Prefiere fuentes directas (viaGoogleNews: false): sus notas
-se pueden leer y traen imagen. Usa una de Google News solo si la historia es importante y ninguna fuente directa la cuenta.
+resumen en otro idioma o puntos que repiten el resumen), que debes rehacer. Prefiere las que se pueden leer (readable: true): fuentes
+directas que traen texto e imagen. Las readable: false (Google News, o medios que bloquean la lectura como El País) no
+se abren con read_article: traen un extracto más largo; úsalas solo si la historia es importante y nadie más la cuenta.
 
 Al guardar:
 - title: el título en su idioma original (las francesas, traducido al inglés), limpio de relleno y ganchos ("Esto es lo que debes saber", "| Medio",
@@ -74,7 +75,7 @@ export function registerTools(server) {
       want: quota(CATEGORIES[category]),
       candidates: candidates.map((c, i) => ({
         i, title: c.title, source: c.source, lang: c.lang, publishedAt: c.publishedAt.toISOString(),
-        excerpt: c.excerpt.slice(0, 400), url: c.url, image: c.image || null, outdated: c.outdated, viaGoogleNews: c.isGN,
+        excerpt: c.excerpt.slice(0, c.readable ? 400 : 1000), readable: c.readable, url: c.url, image: c.image || null, outdated: c.outdated, viaGoogleNews: c.isGN,
       })),
       skipped,
       failedFeeds: failed,
