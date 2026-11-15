@@ -36,6 +36,7 @@ export function cleanItem(raw) {
     lang: s(raw.lang),
     publishedAt: raw.publishedAt ? new Date(raw.publishedAt) : null,
     image: /^https?:\/\//.test(s(raw.image)) ? s(raw.image) : '',
+    keyPoints: Array.isArray(raw.keyPoints) ? raw.keyPoints.map(s).filter(Boolean).slice(0, 6) : [],
   }
   if (!item.title) errors.push('title')
   if (!/^https?:\/\//.test(item.url)) errors.push('url')

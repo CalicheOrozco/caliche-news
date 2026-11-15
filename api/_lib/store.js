@@ -26,6 +26,6 @@ export async function upsertItems(items) {
       },
     })
   })
-  const r = ops.length ? await (await news()).bulkWrite(ops, { ordered: false }) : null
+  const r = ops.length ? await (await news({ withIndexes: true })).bulkWrite(ops, { ordered: false }) : null
   return { inserted: r?.upsertedCount ?? 0, updated: r?.modifiedCount ?? 0, rejected }
 }

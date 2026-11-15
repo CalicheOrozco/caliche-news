@@ -34,6 +34,8 @@ async function list(req, res) {
     .sort(q ? { score: { $meta: 'textScore' }, publishedAt: -1 } : { publishedAt: -1 })
     .limit(limit)
   const items = (await cursor.toArray()).map(({ score, ...d }) => publicItem(d))
+  // La CDN de Vercel la guarda 30 s y la sirve vieja hasta 5 min mientras pide la nueva.
+  res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300')
   send(res, 200, { count: items.length, items })
 }
 

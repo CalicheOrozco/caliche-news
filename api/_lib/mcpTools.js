@@ -31,9 +31,11 @@ Prioriza las que no estén ya en la base (inDatabase: false).
 Al guardar:
 - title: el título en su idioma original, limpio de relleno y ganchos ("Esto es lo que debes saber", "| Medio",
   "VIDEO:", emojis, mayúsculas gritadas), sin cambiar el sentido.
-- summary: 2 a 4 oraciones en español, con tus propias palabras, con los hechos clave (qué, quién, cuándo, dónde y por
-  qué le importa). Usa solo el título y el extracto que devuelve get_candidates. No copies frases del extracto ni del
-  artículo y no inventes datos.
+- summary: 3 a 5 oraciones en español, con tus propias palabras, con los hechos clave (qué, quién, cuándo, dónde) y
+  por qué le importa a Caliche. Usa solo el título y el extracto que devuelve get_candidates. No copies frases del
+  extracto ni del artículo y no inventes datos; si el extracto da poco, el resumen es más corto.
+- keyPoints: 2 a 4 puntos clave en español, cada uno de una línea (cifras, fechas, requisitos, a quién afecta), con
+  tus palabras y solo con datos del título y el extracto. Si no hay datos suficientes, envía menos o ninguno.
 - Copia tal cual url, source, lang, publishedAt e image de la candidata.
 Las no guardadas se borran solas a los ${RETENTION_DAYS} días; las que el usuario marca como guardadas se quedan.`
 
@@ -54,7 +56,7 @@ export function registerTools(server) {
       want: quota(CATEGORIES[category]),
       candidates: candidates.map((c, i) => ({
         i, title: c.title, source: c.source, lang: c.lang, publishedAt: c.publishedAt.toISOString(),
-        excerpt: c.excerpt.slice(0, 300), url: c.url, image: c.image || null, inDatabase: c.inDatabase,
+        excerpt: c.excerpt.slice(0, 1000), url: c.url, image: c.image || null, inDatabase: c.inDatabase,
       })),
       failedFeeds: failed,
     })
@@ -67,7 +69,8 @@ export function registerTools(server) {
       items: z.array(z.object({
         category,
         title: z.string().min(1).max(300),
-        summary: z.string().min(1).max(1200).describe('2 a 4 oraciones en español, con palabras propias'),
+        summary: z.string().min(1).max(1500).describe('3 a 5 oraciones en español, con palabras propias'),
+        keyPoints: z.array(z.string().min(1).max(220)).max(4).optional().describe('2 a 4 puntos clave en español, una línea cada uno'),
         url: z.string().url().max(2000),
         source: z.string().min(1).max(200),
         lang: z.enum(['es', 'en', 'fr']),

@@ -43,7 +43,7 @@ export function parseFeed(xml) {
       title: stripHtml(tag(b, 'title')),
       url: link.trim(),
       publishedAt: date ? new Date(stripHtml(date)) : null,
-      excerpt: stripHtml(html).slice(0, 400),
+      excerpt: stripHtml(html).slice(0, 1000),
       image: imageOf(b, html),
       // Google News pone el medio real en <source>
       origin: stripHtml(tag(b, 'source')),

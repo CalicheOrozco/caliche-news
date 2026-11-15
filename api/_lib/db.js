@@ -4,18 +4,26 @@ import { MongoClient } from 'mongodb'
 let clientPromise
 let indexesReady
 
-export async function getDb() {
+// Lecturas: solo la conexión. Escrituras (withIndexes = true): también se aseguran los índices,
+// una vez por instancia. Revisarlos en cada lectura costaba varios viajes a Atlas por petición.
+export async function getDb({ withIndexes = false } = {}) {
   if (!process.env.MONGODB_URI) throw new Error('Falta MONGODB_URI')
-  clientPromise ??= new MongoClient(process.env.MONGODB_URI).connect()
+  clientPromise ??= new MongoClient(process.env.MONGODB_URI, {
+    maxPoolSize: 5,
+    minPoolSize: 0,
+    serverSelectionTimeoutMS: 8000,
+  }).connect().catch((e) => { clientPromise = undefined; throw e })
   const client = await clientPromise
   const db = client.db(process.env.MONGODB_DB || 'caliche-news')
-  indexesReady ??= ensureIndexes(db)
-  await indexesReady
+  if (withIndexes) {
+    indexesReady ??= ensureIndexes(db).catch((e) => { indexesReady = undefined; throw e })
+    await indexesReady
+  }
   return db
 }
 
-export async function news() {
-  return (await getDb()).collection('news')
+export async function news(opts) {
+  return (await getDb(opts)).collection('news')
 }
 
 async function ensureIndexes(db) {
