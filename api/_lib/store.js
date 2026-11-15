@@ -1,3 +1,4 @@
+import { FORMAT } from './candidates.js'
 import { news } from './db.js'
 import { cleanItem, expiry } from './http.js'
 
@@ -17,6 +18,7 @@ export async function upsertItems(items) {
               // $literal: un título como "$5 mil millones" no debe leerse como nombre de campo.
               ...Object.fromEntries(Object.entries(item).map(([k, v]) => [k, { $literal: v }])),
               updatedAt: now,
+              fmt: FORMAT,
               addedAt: { $ifNull: ['$addedAt', now] },
               saved: { $ifNull: ['$saved', false] },
           } },

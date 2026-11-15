@@ -26,7 +26,10 @@ busca la residencia permanente de Canadá, trabaja en desarrollo web y le intere
 
 Para actualizar las noticias, por cada categoría: llama a get_candidates, elige las más relevantes e importantes
 para él sin repetir la misma historia, lee cada una con read_article y guárdalas con save_news. Cuántas por categoría: ${Object.entries(CATEGORIES).map(([k, c]) => `${k}: ${quota(c)}`).join('; ')}.
-Prioriza las que no estén ya en la base (inDatabase: false). Prefiere fuentes directas (viaGoogleNews: false): sus notas
+Ve categoría por categoría y termina cada una (get_candidates → read_article → save_news) antes de pasar a la
+siguiente, para no quedarte sin contexto. Si no alcanzas todas, di cuáles faltan.
+Prioriza las que no estén ya en la base (inDatabase: false) y luego las guardadas con el formato viejo
+(outdated: true: resumen en otro idioma o puntos que repiten el resumen), que debes rehacer. Prefiere fuentes directas (viaGoogleNews: false): sus notas
 se pueden leer y traen imagen. Usa una de Google News solo si la historia es importante y ninguna fuente directa la cuenta.
 
 Al guardar:
@@ -60,7 +63,7 @@ export function registerTools(server) {
     inputSchema: {
       category: category.describe(Object.entries(CATEGORIES).map(([k, c]) => `${k} = ${c.label}`).join(', ')),
       hours: z.number().int().min(6).max(168).optional().describe('Antigüedad máxima en horas (por defecto 72)'),
-      max: z.number().int().min(10).max(150).optional().describe('Máximo de candidatas (por defecto 80)'),
+      max: z.number().int().min(10).max(150).optional().describe('Máximo de candidatas (por defecto 40)'),
     },
     annotations: READ,
   }, async ({ category, hours, max }) => {
@@ -70,7 +73,7 @@ export function registerTools(server) {
       want: quota(CATEGORIES[category]),
       candidates: candidates.map((c, i) => ({
         i, title: c.title, source: c.source, lang: c.lang, publishedAt: c.publishedAt.toISOString(),
-        excerpt: c.excerpt.slice(0, 1000), url: c.url, image: c.image || null, inDatabase: c.inDatabase,
+        excerpt: c.excerpt.slice(0, 400), url: c.url, image: c.image || null, inDatabase: c.inDatabase, outdated: c.outdated,
         viaGoogleNews: /(^|\.)news\.google\.com$/.test(new URL(c.url).hostname),
       })),
       failedFeeds: failed,
@@ -84,7 +87,7 @@ export function registerTools(server) {
     annotations: READ,
   }, async ({ url }) => {
     try {
-      return ok(await readArticle(url))
+      return ok(await readArticle(url, 5000))
     } catch (e) {
       return ok({ url, text: '', complete: false, error: e.message })
     }

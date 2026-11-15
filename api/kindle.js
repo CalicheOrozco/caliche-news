@@ -1,5 +1,5 @@
 // GET /api/kindle?per=3  → texto plano para el panel del Kindle (busybox awk no lee JSON).
-// Una línea por noticia:  N|categoria|Etiqueta|idioma|YYYY-MM-DDTHH:MMZ|fuente|título|resumen
+// Una línea por noticia:  N|categoria|Etiqueta|idioma|YYYY-MM-DDTHH:MMZ|fuente|título|resumen|puntos (separados por " ~ ")
 import { news } from './_lib/db.js'
 import { CATEGORIES } from './_lib/categories.js'
 
@@ -15,7 +15,8 @@ export default async function handler(req, res) {
       const docs = await c.find({ category: id }).sort({ publishedAt: -1 }).limit(per).toArray()
       for (const d of docs) {
         const when = d.publishedAt ? d.publishedAt.toISOString().slice(0, 16) + 'Z' : ''
-        lines.push(['N', id, cat.label, d.lang, when, flat(d.source), flat(d.title), flat(d.summary)].join('|'))
+        lines.push(['N', id, cat.label, d.lang, when, flat(d.source), flat(d.title), flat(d.summary),
+          (d.keyPoints || []).map((k) => flat(k).replace(/~/g, '-')).join(' ~ ')].join('|'))
       }
     }
     res.status(200).end(lines.join('\n') + '\n')

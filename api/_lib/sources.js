@@ -67,7 +67,6 @@ export const SOURCES = {
     { name: 'BBC Mundo', lang: 'es', url: 'https://feeds.bbci.co.uk/mundo/rss.xml' },
     { name: 'El País Internacional', lang: 'es', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada' },
     { name: 'DW Español', lang: 'es', url: 'https://rss.dw.com/xml/rss-sp-all' },
-    { name: 'France 24 Español', lang: 'es', url: 'https://www.france24.com/es/rss' },
     { name: 'CNN en Español', lang: 'es', url: 'https://cnnespanol.cnn.com/feed/' },
     { name: 'BBC World', lang: 'en', url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
     { name: 'The Guardian World', lang: 'en', url: 'https://www.theguardian.com/world/rss' },
