@@ -8,7 +8,7 @@ const flat = (s = '') => String(s).replace(/[|\r\n]+/g, ' ').trim()
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
   try {
-    const per = Math.min(Math.max(parseInt(req.query.per) || 3, 1), 10)
+    const per = Math.min(Math.max(parseInt(req.query.per) || 3, 1), 20)
     const c = await news()
     const lines = []
     for (const [id, cat] of Object.entries(CATEGORIES)) {
