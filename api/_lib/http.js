@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { CATEGORIES, LANGS, RETENTION_DAYS } from './categories.js'
+import { isGoogleImage } from './feeds.js'
 
 export function send(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json; charset=utf-8')
@@ -35,7 +36,7 @@ export function cleanItem(raw) {
     category: s(raw.category),
     lang: s(raw.lang),
     publishedAt: raw.publishedAt ? new Date(raw.publishedAt) : null,
-    image: /^https?:\/\//.test(s(raw.image)) ? s(raw.image) : '',
+    image: /^https?:\/\//.test(s(raw.image)) && !isGoogleImage(s(raw.image)) ? s(raw.image) : '',
     keyPoints: Array.isArray(raw.keyPoints) ? raw.keyPoints.map(s).filter(Boolean).slice(0, 6) : [],
   }
   if (!item.title) errors.push('title')
@@ -49,5 +50,7 @@ export function cleanItem(raw) {
 
 // Lo que ve el cliente: id en texto en vez de _id.
 export function publicItem({ _id, ...rest }) {
+  // Las guardadas antes de este filtro pueden traer el logo de Google News como imagen.
+  if (rest.image && isGoogleImage(rest.image)) rest.image = ''
   return { id: String(_id), ...rest }
 }

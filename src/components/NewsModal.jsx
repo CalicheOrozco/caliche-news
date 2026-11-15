@@ -47,7 +47,7 @@ export default function NewsModal({ item, categoryLabel, onClose, onToggleSave }
 
           {item.keyPoints?.length > 0 && (
             <section>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">Puntos clave</h3>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">Para ti</h3>
               <ul className="space-y-2">
                 {item.keyPoints.map((p, i) => (
                   <li key={i} className="flex gap-2 text-zinc-300">
@@ -59,7 +59,7 @@ export default function NewsModal({ item, categoryLabel, onClose, onToggleSave }
             </section>
           )}
 
-          <p className="text-xs text-zinc-500">Resumen escrito por Claude a partir del título y el extracto del medio. Agregada {relative(item.addedAt)}.</p>
+          <p className="text-xs text-zinc-500">Resumen escrito por Claude a partir de la nota original, en su idioma. Agregada {relative(item.addedAt)}.</p>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-5">
             <a href={item.url} target="_blank" rel="noopener noreferrer"

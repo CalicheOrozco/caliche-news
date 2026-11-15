@@ -13,6 +13,11 @@ const decode = (s = '') => s
   .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
   .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
 
+// Enlaces de Google News: su página es una redirección y su "portada" es el logo de Google News.
+export const isGoogleNews = (u) => { try { return /(^|\.)news\.google\.com$/.test(new URL(u).hostname) } catch { return false } }
+const GOOGLE_IMG = /(^|\.)(googleusercontent\.com|gstatic\.com|google\.com)$/
+export const isGoogleImage = (u) => { try { return GOOGLE_IMG.test(new URL(u).hostname) } catch { return false } }
+
 export const stripHtml = (s = '') => decode(decode(s).replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim()
 
 const tag = (xml, name) => {
@@ -44,7 +49,7 @@ export function parseFeed(xml) {
       url: link.trim(),
       publishedAt: date ? new Date(stripHtml(date)) : null,
       excerpt: stripHtml(html).slice(0, 1000),
-      image: imageOf(b, html),
+      image: (() => { const i = imageOf(b, html); return isGoogleImage(i) ? '' : i })(),
       // Google News pone el medio real en <source>
       origin: stripHtml(tag(b, 'source')),
     })
@@ -54,12 +59,13 @@ export function parseFeed(xml) {
 
 // Imagen de portada del artículo (og:image / twitter:image) cuando el feed no trae.
 export async function ogImage(url) {
+  if (isGoogleNews(url)) return ''  // sin portada propia: sería el logo de Google News
   try {
     const html = (await fetchText(url, 5000)).slice(0, 200000)
     const m = html.match(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)(?::src)?["'][^>]*content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["'](?:og:image|twitter:image)["']/i)
     const src = m ? decode(m[1]) : ''
-    return /^https?:\/\//.test(src) && !/news\.google\.com|gstatic\.com/.test(src) ? src : ''
+    return /^https?:\/\//.test(src) && !isGoogleImage(src) ? src : ''
   } catch {
     return ''
   }
@@ -69,6 +75,8 @@ export async function ogImage(url) {
 // Quita scripts, menús, encabezados, pies, barras laterales y formularios; prefiere <article>/<main>
 // y se queda con los párrafos (<p>) con texto de verdad.
 export async function readArticle(url, maxChars = 8000) {
+  // Google News solo redirige con JavaScript: no hay texto ni imagen de la nota.
+  if (isGoogleNews(url)) return { url, title: '', description: '', image: '', text: '', complete: false, note: 'Enlace de Google News: usa el extracto' }
   const html = await fetchText(url, 8000)
   const meta = (name) => {
     const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']+)["']`, 'i'))
@@ -89,7 +97,7 @@ export async function readArticle(url, maxChars = 8000) {
     url,
     title: meta('og:title') || stripHtml(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ''),
     description: meta('og:description') || meta('description'),
-    image: (() => { const i = meta('og:image') || meta('twitter:image'); return /^https?:\/\//.test(i) ? i : firstImage })(),
+    image: (() => { const i = meta('og:image') || meta('twitter:image'); return /^https?:\/\//.test(i) && !isGoogleImage(i) ? i : firstImage })(),
     text,
     complete: text.length > 400,  // false: muro de pago, bloqueo o página sin texto (usa el extracto del RSS)
   }
@@ -107,7 +115,7 @@ function articleImage(html, pageUrl) {
     if (!src || src.startsWith('data:') || /\.svg(\?|$)/i.test(src) || SKIP_IMG.test(src + ' ' + get('class') + ' ' + get('alt'))) continue
     const w = parseInt(get('width')) || 0, h = parseInt(get('height')) || 0
     if ((w && w < 300) || (h && h < 160)) continue
-    try { return new URL(decode(src), pageUrl).href } catch { continue }
+    try { const abs = new URL(decode(src), pageUrl).href; if (!isGoogleImage(abs)) return abs } catch { /* ruta inválida */ }
   }
   return ''
 }

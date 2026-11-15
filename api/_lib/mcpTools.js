@@ -30,13 +30,22 @@ Prioriza las que no estén ya en la base (inDatabase: false). Prefiere fuentes d
 se pueden leer y traen imagen. Usa una de Google News solo si la historia es importante y ninguna fuente directa la cuenta.
 
 Al guardar:
-- title: el título en su idioma original, limpio de relleno y ganchos ("Esto es lo que debes saber", "| Medio",
+- title: el título en su idioma original (las francesas, traducido al inglés), limpio de relleno y ganchos ("Esto es lo que debes saber", "| Medio",
   "VIDEO:", emojis, mayúsculas gritadas), sin cambiar el sentido.
-- summary: 4 a 6 oraciones en español, escritas con tus propias palabras: qué pasó, quién, cuándo, dónde, por qué le
+- summary: 4 a 6 oraciones EN EL IDIOMA ORIGINAL de la noticia si es español o inglés; si es francés (lang: fr), en
+  inglés. Escritas con tus propias palabras: qué pasó, quién, cuándo, dónde, por qué le
   importa a Caliche y qué sigue. Debe ser mucho más corto que el artículo: no lo sigas párrafo por párrafo, no copies
   ni traduzcas frases del texto y no inventes datos.
-- keyPoints: 3 a 5 puntos clave en español, de una línea cada uno, con tus palabras (cifras, fechas, requisitos,
-  plazos, a quién afecta). Si hay pocos datos, envía menos.
+- keyPoints ("Para ti"): 2 a 4 puntos, en el mismo idioma que el summary, que NO repitan nada del summary. Cada punto
+  aporta algo nuevo, de uno de estos tipos:
+  · Dato concreto que no cupo en el summary: monto, fecha límite, requisito, a quién aplica, cifra comparativa.
+  · Qué significa para Caliche: mexicano en Moncton, NB, que busca la PR y es desarrollador web (p. ej. si un cambio
+    de IRCC o del NBPNP le afecta, si algo de Moncton le toca en vivienda, empleo o servicios, si una herramienta de
+    IA le sirve en su trabajo).
+  · Contexto o antecedente necesario para entender la noticia (puedes usar lo que sabes, sin inventar cifras).
+  · Qué sigue o qué hacer: fechas a vigilar, un trámite a revisar, qué esperar.
+  Antes de guardar, compara cada punto con el summary y quita los que digan lo mismo con otras palabras. Si la nota no
+  da para nada nuevo, envía keyPoints vacío: es mejor nada que repetir.
 - Si read_article devuelve complete: false (muro de pago o bloqueo), escribe el resumen solo con el título y el
   extracto de get_candidates, más corto.
 - Copia tal cual url, source, lang y publishedAt de la candidata. image: la de la candidata; si viene vacía, la de read_article
@@ -88,11 +97,11 @@ export function registerTools(server) {
       items: z.array(z.object({
         category,
         title: z.string().min(1).max(300),
-        summary: z.string().min(1).max(1500).describe('4 a 6 oraciones en español, con palabras propias'),
-        keyPoints: z.array(z.string().min(1).max(220)).max(5).optional().describe('3 a 5 puntos clave en español, una línea cada uno'),
+        summary: z.string().min(1).max(1500).describe('4 a 6 oraciones con palabras propias: en español o inglés según la noticia; las francesas, en inglés'),
+        keyPoints: z.array(z.string().min(1).max(260)).max(4).optional().describe('"Para ti": 2 a 4 puntos que NO repitan el summary: datos extra, qué significa para Caliche, contexto o qué sigue. Vacío si no hay nada nuevo'),
         url: z.string().url().max(2000),
         source: z.string().min(1).max(200),
-        lang: z.enum(['es', 'en', 'fr']),
+        lang: z.enum(['es', 'en', 'fr']).describe('Idioma de la nota original (se queda fr aunque el resumen vaya en inglés)'),
         publishedAt: z.string().describe('Fecha ISO de la candidata'),
         image: z.string().url().max(2000).nullable().optional(),
       })).min(1).max(100),
