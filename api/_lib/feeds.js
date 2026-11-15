@@ -1,8 +1,10 @@
 // Lector mínimo de RSS 2.0 y Atom sin dependencias.
-const UA = 'Mozilla/5.0 (compatible; CalicheNews/1.0; +https://vercel.com)'
+// Algunos medios (CBC, por ejemplo) rechazan a los lectores que se presentan como bots.
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'
+const ACCEPT = 'application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.9, text/html;q=0.8, */*;q=0.7'
 
 export async function fetchText(url, ms = 8000) {
-  const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: '*/*' }, signal: AbortSignal.timeout(ms), redirect: 'follow' })
+  const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: ACCEPT, 'Accept-Language': 'en-CA,en;q=0.9,es;q=0.8,fr;q=0.7' }, signal: AbortSignal.timeout(ms), redirect: 'follow' })
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
   return await r.text()
 }

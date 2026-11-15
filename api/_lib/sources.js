@@ -39,10 +39,11 @@ export const SOURCES = {
   ],
   moncton: [
     { name: 'CBC New Brunswick', lang: 'en', url: 'https://www.cbc.ca/webfeed/rss/rss-canada-newbrunswick' },
+    { name: 'Radio-Canada Acadie', lang: 'fr', url: 'https://ici.radio-canada.ca/info/rss/acadie/en-continu' },
     { name: 'Global News', lang: 'en', url: 'https://globalnews.ca/new-brunswick/feed/' },
     { name: 'Huddle', lang: 'en', url: 'https://huddle.today/feed/' },
+    // Respaldo: solo se usa si ninguna fuente directa cuenta la historia (no se puede leer ni trae imagen).
     { name: 'Moncton / NB (Google News)', lang: 'en', url: gnews('Moncton OR "New Brunswick"') },
-    { name: 'Radio-Canada Acadie (Google Actualités)', lang: 'fr', url: gnews('Moncton OR Acadie OR "Nouveau-Brunswick"', 'fr-CA') },
   ],
   migracion: [
     { name: 'IRCC (Canada.ca)', lang: 'en', url: 'https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentofcitizenshipandimmigration&sort=publishedDate&orderBy=desc&pick=30&format=atom' },
@@ -54,12 +55,13 @@ export const SOURCES = {
   ],
   canada: [
     { name: 'CBC News', lang: 'en', url: 'https://www.cbc.ca/webfeed/rss/rss-canada' },
+    { name: 'CBC Politics', lang: 'en', url: 'https://www.cbc.ca/webfeed/rss/rss-politics' },
+    { name: 'CBC Business', lang: 'en', url: 'https://www.cbc.ca/webfeed/rss/rss-business' },
+    { name: 'Radio-Canada', lang: 'fr', url: 'https://ici.radio-canada.ca/rss/4159' },
     { name: 'Global News', lang: 'en', url: 'https://globalnews.ca/canada/feed/' },
-    { name: 'CTV News', lang: 'en', url: 'https://www.ctvnews.ca/rss/ctvnews-ca-canada-public-rss-1.822284' },
     { name: 'The Globe and Mail', lang: 'en', url: 'https://www.theglobeandmail.com/arc/outboundfeeds/rss/category/canada/' },
     { name: 'National Post', lang: 'en', url: 'https://nationalpost.com/category/news/canada/feed' },
-    { name: 'Toronto Star / Canadian Press (Google News)', lang: 'en', url: gnews('Canada news') },
-    { name: 'Radio-Canada (Google Actualités)', lang: 'fr', url: gnews('Canada', 'fr-CA') },
+    { name: 'Canadian Press (Google News)', lang: 'en', url: gnews('"Canadian Press" Canada') },
   ],
 }
 
