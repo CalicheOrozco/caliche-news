@@ -1,6 +1,7 @@
 import { relative, fullDate } from '../time.js'
 import Cover from './Cover.jsx'
 import SaveButton from './SaveButton.jsx'
+import ShareButton from './ShareButton.jsx'
 
 export const LANG = { es: 'ES', en: 'EN', fr: 'FR' }
 
@@ -32,7 +33,16 @@ export default function NewsCard({ item, categoryLabel, onOpen, onToggleSave }) 
 
         <div className="mt-auto flex items-center justify-between pt-2">
           <span className="text-sm font-medium text-emerald-400">Ver resumen →</span>
-          <SaveButton item={item} onToggleSave={onToggleSave} />
+          <div className="flex items-center">
+            <a href={item.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+              title="Leer la noticia original" aria-label="Leer la noticia original"
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100">
+              Leer
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M7 17 17 7M9 7h8v8" /></svg>
+            </a>
+            <ShareButton item={item} compact className="px-2.5" />
+            <SaveButton item={item} onToggleSave={onToggleSave} />
+          </div>
         </div>
       </div>
     </article>

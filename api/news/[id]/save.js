@@ -9,10 +9,13 @@ export default async function handler(req, res) {
     const _id = toId(req.query.id)
     if (!_id) return send(res, 400, { error: 'id inválido' })
     const saved = req.body?.saved !== false
+    const col = await news()
+    // Una compartida no vuelve a caducar al quitarla de guardadas: su link debe seguir funcionando.
+    const shared = !saved && (await col.findOne({ _id }, { projection: { shared: 1 } }))?.shared
     const update = saved
       ? { $set: { saved: true, savedAt: new Date() }, $unset: { expiresAt: '' } }
-      : { $set: { saved: false, expiresAt: expiry() }, $unset: { savedAt: '' } }
-    const doc = await (await news()).findOneAndUpdate({ _id }, update, { returnDocument: 'after' })
+      : { $set: { saved: false, ...(shared ? {} : { expiresAt: expiry() }) }, $unset: { savedAt: '' } }
+    const doc = await col.findOneAndUpdate({ _id }, update, { returnDocument: 'after' })
     doc ? send(res, 200, publicItem(doc)) : send(res, 404, { error: 'No existe' })
   } catch (e) {
     send(res, 500, { error: e.message })

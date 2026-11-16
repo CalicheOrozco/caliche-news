@@ -22,7 +22,7 @@ export async function upsertItems(items) {
               addedAt: { $ifNull: ['$addedAt', now] },
               saved: { $ifNull: ['$saved', false] },
           } },
-          { $set: { expiresAt: { $cond: ['$saved', '$$REMOVE', { $ifNull: ['$expiresAt', expiry(now)] }] } } },
+          { $set: { expiresAt: { $cond: [{ $or: ['$saved', { $ifNull: ['$shared', false] }] }, '$$REMOVE', { $ifNull: ['$expiresAt', expiry(now)] }] } } },
         ],
         upsert: true,
       },

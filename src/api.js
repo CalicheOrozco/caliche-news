@@ -19,6 +19,10 @@ export function getNews({ category, lang, q, saved, before, limit = 30 } = {}) {
   return fetch(`/api/news?${p}`).then(json)
 }
 
+export const getNewsItem = (id) => fetch(`/api/news/${encodeURIComponent(id)}`).then(json)
+export const markShared = (id) => fetch(`/api/news/${encodeURIComponent(id)}/share`, { method: 'POST' }).then(json)
+export const shareUrl = (item) => `${location.origin}/n/${item.id}`
+
 export const setSaved = (id, saved) =>
   fetch(`/api/news/${id}/save`, {
     method: 'PATCH',

@@ -4,6 +4,10 @@
     {
       "source": "/mcp/:key",
       "destination": "/api/mcp?key=:key"
+    },
+    {
+      "source": "/n/:id",
+      "destination": "/api/page?id=:id"
     }
   ],
   "headers": [

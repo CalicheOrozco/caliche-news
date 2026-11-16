@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getCategories, getCounts, getNews, setSaved } from './api.js'
+import { getCategories, getCounts, getNews, getNewsItem, setSaved } from './api.js'
 import NewsCard from './components/NewsCard.jsx'
 import NewsModal from './components/NewsModal.jsx'
 
@@ -19,6 +19,19 @@ export default function App() {
   const [error, setError] = useState('')
   const reqId = useRef(0)
   const [open, setOpen] = useState(null)  // noticia abierta en el detalle
+  const [linkError, setLinkError] = useState('')
+
+  // Link compartido (/n/:id, o /?n=id tras pasar por la vista previa): abre esa noticia.
+  useEffect(() => {
+    const id = location.pathname.match(/^\/n\/([\w-]+)/)?.[1] || new URLSearchParams(location.search).get('n')
+    if (!id) return
+    getNewsItem(id).then(setOpen).catch(() => setLinkError('Esa noticia ya no está disponible.'))
+  }, [])
+  // La dirección sigue a la noticia abierta, para poder copiarla o recargar.
+  useEffect(() => {
+    const want = open ? `/n/${open.id}` : '/'
+    if (location.pathname + location.search !== want) history.replaceState(null, '', want)
+  }, [open])
   const cache = useRef(new Map())  // pestaña/filtros -> { items, more }
   const [counts, setCounts] = useState(null)  // { categories: { ia: 20, ... }, saved: 3 }
   const refreshCounts = useCallback(() => { getCounts().then(setCounts).catch(() => {}) }, [])
@@ -162,6 +175,7 @@ export default function App() {
           )}
         </div>
 
+        {linkError && <p className="mb-4 rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-300">{linkError}</p>}
         {error && <p className="mb-4 rounded-xl border border-red-900 bg-red-950/50 p-3 text-sm text-red-300">Error: {error}</p>}
 
         {!loading && !error && items.length === 0 && (
