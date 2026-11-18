@@ -59,9 +59,56 @@ export function parseFeed(xml) {
   return items.filter((i) => i.title && /^https?:\/\//.test(i.url) && i.publishedAt && !isNaN(i.publishedAt))
 }
 
+// Enlace real detrás de un link de Google News (news.google.com/rss/articles/<id>). Google redirige
+// con JavaScript, así que se pide igual que lo hace su página: con la firma (data-n-a-sg) y la
+// marca de tiempo (data-n-a-ts) de la página del artículo, al endpoint interno batchexecute.
+// Los ids viejos traen la URL dentro del base64 y se leen sin pedir nada. Google cambia esto de vez
+// en cuando: si falla, lanza un error y quien llama usa el extracto del RSS.
+const gnCache = new Map()
+export async function resolveGoogleNews(url) {
+  if (!isGoogleNews(url)) return url
+  if (gnCache.has(url)) return gnCache.get(url)
+  const id = new URL(url).pathname.split('/').filter(Boolean).pop()
+  let real = ''
+  try {  // formato viejo: la URL va dentro del id
+    const raw = Buffer.from(id.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('latin1')
+    if (!raw.includes('AU_yqL')) real = raw.match(/https?:\/\/[\x21-\x7e]+/)?.[0] || ''
+  } catch { /* id no es base64 */ }
+  if (!real) {
+    const page = await fetchText(`https://news.google.com/rss/articles/${id}`, 8000)
+    const sg = page.match(/data-n-a-sg="([^"]+)"/)?.[1]
+    const ts = page.match(/data-n-a-ts="([^"]+)"/)?.[1]
+    if (!sg || !ts) throw new Error('Google News no dio la firma del artículo')
+    const req = ['Fbv4je', `["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],"X","X",1,[1,1,1],1,1,null,0,0,null,0],"${id}",${ts},"${sg}"]`]
+    const res = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'User-Agent': UA, Referer: 'https://news.google.com/' },
+      body: 'f.req=' + encodeURIComponent(JSON.stringify([[req]])),
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) throw new Error(`Google News respondió ${res.status}`)
+    real = parseGarturl(await res.text())
+    if (!real) throw new Error('Google News no devolvió el enlace real')
+  }
+  gnCache.set(url, real)
+  return real
+}
+export function parseGarturl(text) {
+  try {  // respuesta: )]}' + bloques separados por líneas en blanco; el segundo trae [["wrb.fr","Fbv4je","<json>",...]]
+    const rows = JSON.parse(text.split('\n\n')[1])
+    for (const r of rows) {
+      if (r?.[1] === 'Fbv4je' && typeof r[2] === 'string') {
+        const u = JSON.parse(r[2])?.[1]
+        if (/^https?:\/\//.test(u)) return u
+      }
+    }
+  } catch { /* formato inesperado: probar con la búsqueda directa */ }
+  return text.match(/garturlres\\",\\"(https?:[^"\\]+)/)?.[1] || ''
+}
+
 // Imagen de portada del artículo (og:image / twitter:image) cuando el feed no trae.
 export async function ogImage(url) {
-  if (isGoogleNews(url)) return ''  // sin portada propia: sería el logo de Google News
+  if (isGoogleNews(url)) { try { url = await resolveGoogleNews(url) } catch { return '' } }
   try {
     const html = (await fetchText(url, 5000)).slice(0, 200000)
     const m = html.match(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)(?::src)?["'][^>]*content=["']([^"']+)["']/i)
@@ -77,8 +124,13 @@ export async function ogImage(url) {
 // Quita scripts, menús, encabezados, pies, barras laterales y formularios; prefiere <article>/<main>
 // y se queda con los párrafos (<p>) con texto de verdad.
 export async function readArticle(url, maxChars = 8000) {
-  // Google News solo redirige con JavaScript: no hay texto ni imagen de la nota.
-  if (isGoogleNews(url)) return { url, title: '', description: '', image: '', text: '', complete: false, note: 'Enlace de Google News: usa el extracto' }
+  // Google News: primero se saca el enlace real de la nota y se lee esa página.
+  const gn = isGoogleNews(url) ? url : null
+  if (gn) {
+    try { url = await resolveGoogleNews(gn) } catch (e) {
+      return { url: gn, title: '', description: '', image: '', text: '', complete: false, note: `No se pudo sacar el enlace real de Google News (${e.message}): usa el extracto` }
+    }
+  }
   const html = await fetchText(url, 8000)
   const meta = (name) => {
     const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']+)["']`, 'i'))
@@ -110,6 +162,7 @@ export async function readArticle(url, maxChars = 8000) {
   text = text.slice(0, maxChars)
   return {
     url,
+    ...(gn ? { resolvedFrom: gn, sourceDomain: new URL(url).hostname.replace(/^www\./, '') } : {}),
     title: meta('og:title') || stripHtml(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ''),
     description: meta('og:description') || meta('description'),
     image: (() => { const i = meta('og:image') || meta('twitter:image'); return /^https?:\/\//.test(i) && !isGoogleImage(i) ? i : firstImage })(),

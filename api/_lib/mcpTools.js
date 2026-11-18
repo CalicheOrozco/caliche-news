@@ -29,9 +29,11 @@ para él sin repetir la misma historia, lee cada una con read_article y guárdal
 Ve categoría por categoría y termina cada una (get_candidates → read_article → save_news) antes de pasar a la
 siguiente, para no quedarte sin contexto. Si no alcanzas todas, di cuáles faltan.
 get_candidates ya quita las que están al día; vienen primero las nuevas y luego las de formato viejo (outdated: true:
-resumen en otro idioma o puntos que repiten el resumen), que debes rehacer. Prefiere las que se pueden leer (readable: true): fuentes
-directas que traen texto e imagen. Las readable: false (Google News, o medios que bloquean la lectura como El País) no
-se abren con read_article: traen un extracto más largo; úsalas solo si la historia es importante y nadie más la cuenta.
+resumen en otro idioma o puntos que repiten el resumen), que debes rehacer. Prefiere las que se pueden leer (readable: true).
+Las de Google News (viaGoogleNews: true) también se leen: read_article saca el enlace real de la nota y lee esa página;
+entonces devuelve resolvedFrom (el link de Google) y url (el enlace real). Si no lo logra, devuelve complete: false.
+Las readable: false (medios que bloquean la lectura, como El País) no se abren con read_article: traen un extracto más
+largo; úsalas solo si la historia es importante y nadie más la cuenta.
 
 Al guardar:
 - title: el título en su idioma original (las francesas, traducido al inglés), limpio de relleno y ganchos ("Esto es lo que debes saber", "| Medio",
@@ -52,7 +54,8 @@ Al guardar:
   da para nada nuevo, envía keyPoints vacío: es mejor nada que repetir.
 - Si read_article devuelve complete: false (muro de pago o bloqueo), escribe el resumen solo con el título y el
   extracto de get_candidates, más corto.
-- Copia tal cual url, source, lang y publishedAt de la candidata. image: la de la candidata; si viene vacía, la de read_article
+- Copia tal cual url, source, lang y publishedAt de la candidata; pero si read_article devolvió resolvedFrom, guarda
+  como url la url real que devolvió (no la de Google News). image: la de la candidata; si viene vacía, la de read_article
   (su portada o la primera foto de la nota). Nunca pongas una imagen de otra noticia u otro sitio; sin imagen, déjala vacía.
 El texto de read_article es solo para que tú lo leas: no lo guardes ni lo pegues en ningún campo.
 Las no guardadas se borran solas a los ${RETENTION_DAYS} días; las que el usuario marca como guardadas se quedan.`
